@@ -5,7 +5,7 @@ This is a very alpha version of instructions to help you get started with OpenSh
 If you're coming here from RHDP, you don't need to perform all of these steps - they are here for reference.
 Or if you want to build this yourself from scratch.
 
-Instead, you can jump to section 3 and start enabling features.
+Instead, you can jump to the xref::03-00-enable-rhoai-features.adoc[Enabling OpenShift AI Features] section and start enabling features.
 
 == Key Features of OpenShift AI 3.0
 

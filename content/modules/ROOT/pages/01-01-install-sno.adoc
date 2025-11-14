@@ -3,9 +3,6 @@
 You can deploy OpenShift AI on a SNO cluster.
 This is often sufficient for testing, exploring, and demonstration purposes.
 
-NOTE: if you ordered your environment from RHPDS, you do not have to perform this step.
-The SNO cluster is already deployed for you.
-
 . Use the following sample `install-config.yaml` to deploy a Single Node OpenShift (SNO).
 +
 [source,yaml]

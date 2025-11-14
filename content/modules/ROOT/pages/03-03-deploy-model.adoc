@@ -10,9 +10,6 @@ NOTE: You can use the `+` at the top right of your OpenShift web UI to create al
 
 . Create a new `namespace` for your workloads to be deployed in.
 +
-
-.Apply the model asset definitions
-+
 [source,yaml]
 ----
 apiVersion: v1
@@ -139,4 +136,4 @@ spec:
       storageUri: 'oci://quay.io/redhat-ai-services/modelcar-catalog:llama-3.2-3b-instruct'
 ----
 
-Once this is complete, your model will become available in the OpenShift AI as `Started/Running`.
+Once this is complete, your model will become available in OpenShift AI as `Started/Running`.

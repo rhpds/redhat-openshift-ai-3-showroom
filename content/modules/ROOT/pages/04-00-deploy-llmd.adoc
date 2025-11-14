@@ -1,7 +1,14 @@
 = Deploying LLM-D
 
 You must have the RHCL Operator deployed before proceeding the llm-d.
-This was covered in the xref:01-02-post-sno.adoc#post-sno-operators[Post SNO Operators list].
+
+Required for llm-d:
+
+* Leader Worker Set
+* Red Hat Connectivity Link Operator 
+** DNS Operator (installed with RHCL)
+** Limitador Operator (installed with RHCL)
+** Authorino Operator (installed with RHCL)
 
 NOTE: If the `KServe` operator does not detect RHCL, reboot the `KServe` operator pod.
 

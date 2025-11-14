@@ -1,1 +1,7 @@
 = Installing OpenShift (IPI)
+
+[NOTE]
+====
+If you ordered your environment from RHPDS, you do not have to perform these steps.
+The SNO cluster is already deployed for you.
+====

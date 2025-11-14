@@ -1,5 +1,11 @@
 = Update the ODH Dashboard
 
+[NOTE]
+====
+If you ordered your environment from RHPDS, you do not have to perform these steps.
+OpenShift AI is is already deployed for you.
+====
+
 [source,yaml]
 ----
 apiVersion: opendatahub.io/v1alpha
