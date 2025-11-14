@@ -1,16 +1,4 @@
 = OpenShift AI 3.0 Installation & Deployment Guide
-:toc:
-:toclevels: 4
-:icons: font
-:sectnums:
-
-[WARNING]
-====
-*WIP — Do not use yet.*
-====
-
-== RC3 Environment
-https://data-science-gateway.apps.test-rc3.rhoai.rh-aiservices-bu.com/
 
 == 1. OpenShift Installation (IPI)
 
