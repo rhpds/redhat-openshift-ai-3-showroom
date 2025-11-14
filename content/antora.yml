@@ -1,5 +1,5 @@
 name: modules
-title: Default Title
+title: Getting Started with OpenShift AI 3.0
 version: master
 nav:
   - modules/ROOT/nav.adoc
