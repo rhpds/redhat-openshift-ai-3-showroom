@@ -2,7 +2,7 @@
 site:
   title: Getting Started with OpenShift AI 3.0
   # url: https://github.com/rhpds/showroom_template_nookbag
-  start_page: modules::ROOT/pages/00-00-intro.adoc
+  start_page: modules::00-00-intro.adoc
 
 content:
   sources:
