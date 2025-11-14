@@ -1,4 +1,4 @@
- = Update teh ODH Dashboard
+= Update the ODH Dashboard
 
 [source,yaml]
 ----
