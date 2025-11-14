@@ -6,12 +6,4 @@ default_width: 30
 # Persist the URL state so browser refresh doesn't reset the UI
 persist_url_state: true
 
-tabs:
-  - name: Bastion
-    path: /wetty
-    port: 443
-    secondary_name: Bastion
-    secondary_path: /wetty
-    secondary_port: 443
-  - name: Llamastack Docs
-    url: 'https://llama-stack.readthedocs.io/en/latest/'
+tabs: []
