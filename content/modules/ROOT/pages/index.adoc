@@ -119,40 +119,31 @@ Storage must be *≥1 TB* for SNO.
 
 == 3. OpenShift AI 3.0 Operator Installation
 
-RHOAI 3.0 is not GA yet. Use RC or nightly fragments.
+With OpenShift AI 3.0 generally available, the recommended installation method is via Red Hat subscription manifests. This approach installs and manages the required operators using Red Hat’s Operator Lifecycle Manager (OLM).
 
-=== Add RHOAI 3.0 CatalogSource
+1. Create a dedicated namespace for the OpenShift AI operators:
+
+[source,bash]
+----
+oc create namespace redhat-ods-operators
+----
+
+2. Apply the OpenShift AI subscription manifest to your cluster:
 
 [source,yaml]
 ----
 apiVersion: operators.coreos.com/v1alpha1
-kind: CatalogSource
+kind: Subscription
 metadata:
-  name: rhoai-3.0-catalog
-  namespace: openshift-marketplace
+  name: rhods-operator
+  namespace: redhat-ods-operators
 spec:
-  displayName: RHOAI 3.0 Catalog
-  image: "quay.io/rhoai/rhoai-fbc-fragment@sha256:364ea097..."
-  publisher: Red Hat
-  sourceType: grpc
-  updateStrategy:
-    registryPoll:
-      interval: 30m
-----
-
-=== ImageContentSourcePolicy
-
-[source,yaml]
-----
-apiVersion: operator.openshift.io/v1alpha1
-kind: ImageContentSourcePolicy
-metadata:
- name: quay-registry
-spec:
- repositoryDigestMirrors:
-   - mirrors:
-       - quay.io/rhoai
-     source: registry.redhat.io/rhoai
+  channel: fast-3.x
+  installPlanApproval: Automatic
+  name: rhods-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: rhods-operator.3.0.0
 ----
 
 Install RHOAI from *fast → 3.x* channel.
