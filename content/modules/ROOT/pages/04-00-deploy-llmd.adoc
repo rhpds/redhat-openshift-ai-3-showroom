@@ -1,0 +1,54 @@
+= Deploying LLM-D
+
+You must have the RHCL Operator deployed before proceeding the llm-d.
+This was covered in the xref:01-02-post-sno.adoc#post-sno-operators[Post SNO Operators list].
+
+NOTE: If the `KServe` operator does not detect RHCL, reboot the `KServe` operator pod.
+
+. Create the `GatewayClass`
++
+[source,yaml]
+----
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+ name: openshift-ai-inference
+spec:
+ controllerName: openshift.io/gateway-controller/v1
+----
+
+. Create the Inference Gateway.
++
+[source,yaml]
+----
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+ name: openshift-ai-inference
+ namespace: openshift-ingress
+spec:
+ gatewayClassName: openshift-ai-inference
+ listeners:
+   - name: https
+     port: 443
+     protocol: HTTPS
+     hostname: inference-gateway.apps.test-rc3.rhoai.rh-aiservices-bu.com
+     tls:
+       mode: Terminate
+       certificateRefs:
+         - kind: Secret
+           name: default-gateway-tls
+     allowedRoutes:
+       namespaces:
+         from: Selector
+         selector:
+           matchExpressions:
+             - key: kubernetes.io/metadata.name
+               operator: In
+               values:
+                 - openshift-ingress
+                 - redhat-ods-applications
+                 - ai-bu-shared
+----
+
+WARNING: If you attempt to deploy these via the UI (not using the yaml import), it may show *failed*.

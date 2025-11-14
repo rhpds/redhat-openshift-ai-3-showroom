@@ -1,7 +1,7 @@
 ---
 site:
-  title: Showroom Template Demo
-  url: https://github.com/rhpds/showroom_template_nookbag
+  title: Getting Started with OpenShift AI 3.0
+  # url: https://github.com/rhpds/showroom_template_nookbag
   start_page: modules::index.adoc
 
 content:

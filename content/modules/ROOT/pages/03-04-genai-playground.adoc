@@ -1,0 +1,10 @@
+= Enable GenAI Playground
+
+Once your model is started and running, you can add it to the GenAI Playground
+
+TODO: Screenshots
+
+* Add model to Playground via *Add to Playground*
+* A LlamaStackDistribution (lsd) instance is created automatically
+* A `run.yaml` ConfigMap is generated
+* A `lsd-<model>` pod spins up

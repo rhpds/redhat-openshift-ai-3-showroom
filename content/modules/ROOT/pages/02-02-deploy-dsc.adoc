@@ -1,0 +1,38 @@
+= Deploy OpenShift 3.0 DataScienceCluster
+
+Now that you have the Operator installed and running, it is time to deploy OpenShift AI itself!
+
+. Using the `+` in the top right of your console, create a DataScienceCluster
++
+[source,yaml]
+----
+kind: DataScienceCluster
+apiVersion: datasciencecluster.opendatahub.io/v2
+metadata:
+ name: default-dsc
+spec:
+ components:
+   dashboard:
+     managementState: Managed
+   aipipelines:
+     managementState: Managed
+   feastoperator:
+     managementState: Managed
+   kserve:
+     managementState: Managed
+   llamastackoperator:
+     managementState: Managed
+   kueue:
+     managementState: Removed
+   modelregistry:
+     managementState: Managed
+     registriesNamespace: rhoai-model-registries
+   ray:
+     managementState: Managed
+   workbenches:
+     managementState: Managed
+   trainingoperator:
+     managementState: Managed
+   trustyai:
+     managementState: Managed
+----

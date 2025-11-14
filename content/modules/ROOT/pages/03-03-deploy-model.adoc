@@ -1,0 +1,142 @@
+= Deploy a Model
+
+The following resources create a model asset for *Llama 3.2–3B Instruct*, including:
+
+* A Secret containing the OCI model reference
+* A global `ServingRuntime`` using vLLM on GPU
+* An `InferenceService`` integrated with KServe and GPU hardware profiles
+
+NOTE: You can use the `+` at the top right of your OpenShift web UI to create all of these resources.
+
+. Create a new `namespace` for your workloads to be deployed in.
++
+
+.Apply the model asset definitions
++
+[source,yaml]
+----
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-first-model
+----
+
+. Create a `secret` for the location of your model
++
+[source,yaml]
+----
+kind: Secret
+apiVersion: v1
+metadata:
+  name: llama-32-3b-instruct
+  namespace: my-first-model
+  labels:
+    opendatahub.io/dashboard: 'true'
+  annotations:
+    opendatahub.io/connection-type-protocol: uri
+    opendatahub.io/connection-type-ref: uri-v1
+    openshift.io/description: ''
+    openshift.io/display-name: llama-3.2-3b-instruct
+data:
+  URI: b2NpOi8vcXVheS5pby9yZWRoYXQtYWktc2VydmljZXMvbW9kZWxjYXItY2F0YWxvZzpsbGFtYS0zLjItM2ItaW5zdHJ1Y3Q=
+type: Opaque
+----
+
+. Create your `ServingRuntime`
++
+[source,yaml]
+----
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  annotations:
+    opendatahub.io/apiProtocol: REST
+    opendatahub.io/recommended-accelerators: '["nvidia.com/gpu"]'
+    opendatahub.io/runtime-version: v0.9.1.0
+    opendatahub.io/serving-runtime-scope: global
+    opendatahub.io/template-display-name: vLLM NVIDIA GPU ServingRuntime for KServe
+    opendatahub.io/template-name: vllm-cuda-runtime-template
+    openshift.io/display-name: vLLM NVIDIA GPU ServingRuntime for KServe
+  name: llama-32-3b-instruct
+  namespace: my-first-model
+  labels:
+    opendatahub.io/dashboard: 'true'
+spec:
+  annotations:
+    prometheus.io/path: /metrics
+    prometheus.io/port: '8080'
+  containers:
+    - args:
+        - '--port=8080'
+        - '--model=/mnt/models'
+        - '--served-model-name={{.Name}}'
+      command:
+        - python
+        - '-m'
+        - vllm.entrypoints.openai.api_server
+      env:
+        - name: HF_HOME
+          value: /tmp/hf_home
+      image: 'registry.redhat.io/rhaiis/vllm-cuda-rhel9@sha256:ad756c01ec99a99cc7d93401c41b8d92ca96fb1ab7c5262919d818f2be4f3768'
+      name: kserve-container
+      ports:
+        - containerPort: 8080
+          protocol: TCP
+  multiModel: false
+  supportedModelFormats:
+    - autoSelect: true
+      name: vLLM
+----
+
+. Create your `InferenceService`.
++
+[source,yaml]
+----
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    serving.kserve.io/stop: 'false'
+    security.opendatahub.io/enable-auth: 'false'
+    openshift.io/description: ''
+    openshift.io/display-name: llama-32-3b-instruct
+    serving.kserve.io/deploymentMode: RawDeployment
+    opendatahub.io/hardware-profile-namespace: redhat-ods-applications
+    opendatahub.io/hardware-profile-name: gpu-profile
+    opendatahub.io/connections: llama-32-3b-instruct
+    opendatahub.io/model-type: generative
+  name: llama-32-3b-instruct
+  namespace: my-first-model
+  labels:
+    opendatahub.io/dashboard: 'true'
+    opendatahub.io/genai-asset: 'true'
+spec:
+  predictor:
+    automountServiceAccountToken: false
+    maxReplicas: 1
+    minReplicas: 1
+    model:
+      args:
+        - '--dtype=half'
+        - '--max-model-len=20000' # TODO: validate that this works on g6.4xlarge
+        - '--gpu-memory-utilization=0.95'
+        - '--enable-auto-tool-choice'
+        - '--tool-call-parser=llama3_json'
+        - '--chat-template=/opt/app-root/template/tool_chat_template_llama3.2_json.jinja'
+      modelFormat:
+        name: vLLM
+      name: ''
+      resources:
+        limits:
+          cpu: '4'
+          memory: 16Gi
+          nvidia.com/gpu: '1'
+        requests:
+          cpu: '1'
+          memory: 6Gi
+          nvidia.com/gpu: '1'
+      runtime: llama-32-3b-instruct
+      storageUri: 'oci://quay.io/redhat-ai-services/modelcar-catalog:llama-3.2-3b-instruct'
+----
+
+Once this is complete, your model will become available in the OpenShift AI as `Started/Running`.

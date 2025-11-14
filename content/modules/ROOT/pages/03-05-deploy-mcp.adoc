@@ -1,0 +1,19 @@
+= Deploy MCP Servers
+
+You can also deploy MCP servers.
+An example that you can deploy is:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+ name: gen-ai-aa-mcp-servers
+ namespace: redhat-ods-applications
+data:
+ GitHub-MCP-Server: |
+   {
+     "url": "https://api.githubcopilot.com/mcp",
+     "description": "GitHub MCP Server..."
+   }
+----

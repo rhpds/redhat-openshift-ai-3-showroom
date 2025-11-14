@@ -1,0 +1,7 @@
+= Deploying OpenShift AI 3.0 Operator
+
+OpenShift AI 3.0 is generally available via Operator Hub.
+
+Simply install the Operator from the `fast-3.x` channel and accept all default options.
+
+TODO: screenshots

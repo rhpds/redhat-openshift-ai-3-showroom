@@ -1,0 +1,61 @@
+= Installing Single Node OpenShift (SNO)
+
+You can deploy OpenShift AI on a SNO cluster.
+This is often sufficient for testing, exploring, and demonstration purposes.
+
+NOTE: if you ordered your environment from RHPDS, you do not have to perform this step.
+The SNO cluster is already deployed for you.
+
+. Use the following sample `install-config.yaml` to deploy a Single Node OpenShift (SNO).
++
+[source,yaml]
+----
+apiVersion: v1
+baseDomain: rhoai.rh-aiservices-bu.com
+compute:
+  - architecture: amd64
+    hyperthreading: Enabled
+    name: worker
+    platform:
+      aws:
+        type: m6i.4xlarge
+    replicas: 0
+controlPlane:
+  architecture: amd64
+  hyperthreading: Enabled
+  name: master
+  platform:
+    aws:
+      type: g6.12xlarge
+      rootVolume:
+        size: 1000
+  replicas: 1
+metadata:
+  name: test-rc2
+networking:
+  clusterNetwork:
+    - cidr: 10.128.0.0/14
+      hostPrefix: 23
+  machineNetwork:
+    - cidr: 10.0.0.0/16
+  networkType: OVNKubernetes
+  serviceNetwork:
+    - 172.30.0.0/16
+platform:
+  aws:
+    region: us-west-2
+publish: External
+pullSecret: "<your pull secret>"
+sshKey: "<your ssh Key>"
+----
+
+. Download the OpenShift installer from https://console.redhat.com/openshift/downloads#tool-x86_64-openshift-install.
+
+. Run the installation using your `install-config.yaml` file.
++
+[source,bash]
+----
+./openshift-install create cluster --dir . --log-level=info
+----
+
+. When the installation is complete, you can log into the cluster with the `kubeadmin` credentials.

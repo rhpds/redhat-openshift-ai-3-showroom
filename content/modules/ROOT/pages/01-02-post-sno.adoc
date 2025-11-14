@@ -1,0 +1,43 @@
+= Post-SNO Configuration
+
+Once your SNO cluster is up and running, you need to install some additional components before you move onto OpenShift AI.
+
+[#post-sno-operators]
+== Required Operators
+
+The following Operators must be installed before provisioning OpenShift AI.
+You can use the `latest` or similar channel for all of these.
+
+* Certificate Manager
+* CertManager Instance
+* ClusterIssuer + Secret
+* API + Apps certificates
+* Cert copy jobs (API + Apps)
+* Node Feature Discovery Operator + CR
+* NVIDIA GPU Operator + ClusterPolicy
+
+Required for llm-d
+
+* Leader Worker Set
+* Red Hat Connectivity Link Operator 
+** DNS Operator (installed with RHCL)
+** Limitador Operator (installed with RHCL)
+** Authorino Operator (installed with RHCL)
+
+NOTE: Service Mesh 3 and Kueue are installed automatically via the DataScienceCluster CR.
+
+== Enable UserWorkloadMonitoring
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true
+    alertmanagerMain:
+      enableUserAlertmanagerConfig: true
+----

@@ -1,0 +1,12 @@
+= {lab_name}
+
+This is a very alpha version of instructions to help you get started with OpenShift AI 3.0.
+
+If you're coming here from RHDP, you don't need to perform all of these steps - they are here for reference.
+Or if you want to build this yourself from scratch.
+
+Instead, you can jump to section 3 and start enabling features.
+
+== Key Features of OpenShift AI 3.0
+
+Coming Soon
