@@ -1,43 +1,365 @@
-= {lab_name}
+= OpenShift AI 3.0 Installation & Deployment Guide
+:toc:
+:toclevels: 4
+:icons: font
+:sectnums:
 
-The `lab_name` var, known as an asciidoc attribute, above was set in `./content/antora.yml` and can be used to set the lab_name or title of your content.
-You are both free to change its value and if you prefer to use a different var name, you can change the value of `lab_name`, for example to `title` in `./content/antora.yml` and then reference it in your content as `\{title}`. +
+[WARNING]
+====
+*WIP — Do not use yet.*
+====
 
-image::rhel-logo-black.jpg[rhel-logo-black,55%,55%]
+== RC3 Environment
+https://data-science-gateway.apps.test-rc3.rhoai.rh-aiservices-bu.com/
 
-== Variables
+== 1. OpenShift Installation (IPI)
 
-Other vars can also be set there, such as `ssh_user` and `ssh_password`, and referenced inline in the lab content by using the `\{foo}` syntax.
+Create an `install-config.yaml` to provision an SNO (Single Node OpenShift) cluster on AWS using IPI.
 
-This is another var, or asciidoc attribute, from `./content/antora.yml` {my_var}
-
-== Writing your lab
-
-Whatever type of content you are writing we'll refer to your *content* as "your lab" in this document.
-
-=== Lab structure
-
-Wether you are writing a lab
-
-* First, we will build a monolithic application already compiled as RPM packages and put it into a container. This will allow us to deploy the application, copy it between machines, and update it separately from the operating system. This process affords us a portable and easily maintained component instead of tightly coupling the application with your operating system maintenance.
-
-* In closing we will build a second container on a different operating system version that makes an application not packaged into RPMs. This will be similar to a web application deployment, positioning the correct files at the right locations. To do this, we will pull a project from GitHub and position the component files within our container image. The purpose of this is to achieve a portable application container that can deploy on several different versions of Red Hat Enterprise Linux. This also provides the benefit of decoupling your application maintenance, which would all happen by building new containers versus operating system maintenance. The container is no longer reliant on the operating system installed on the machine where the application is deployed.
-
-. Now let's examine this cluster a bit more by describing the cluster (the `$GUID` environment variable is already set for you so you can immediately describe your individual cluster):
-+
-[source,sh,role=execute]
+.Sample `install-config.yaml`
+[source,yaml]
 ----
-podman ps
-----
-+
-.Sample Output
-[source,texinfo,subs="attributes"]
-----
-CONTAINER ID  IMAGE                        COMMAND           CREATED      STATUS      PORTS                 NAMES
-2dcfee9e50c4  docker.io/library/httpd:2.4  httpd-foreground  3 hours ago  Up 3 hours  0.0.0.0:8080->80/tcp  showroom-httpd
+apiVersion: v1
+baseDomain: rhoai.rh-aiservices-bu.com
+compute:
+  - architecture: amd64
+    hyperthreading: Enabled
+    name: worker
+    platform:
+      aws:
+        type: m6i.4xlarge
+    replicas: 0
+controlPlane:
+  architecture: amd64
+  hyperthreading: Enabled
+  name: master
+  platform:
+    aws:
+      type: g6e.12xlarge
+      rootVolume:
+        size: 1000
+  replicas: 1
+metadata:
+  name: test-rc2
+networking:
+  clusterNetwork:
+    - cidr: 10.128.0.0/14
+      hostPrefix: 23
+  machineNetwork:
+    - cidr: 10.0.0.0/16
+  networkType: OVNKubernetes
+  serviceNetwork:
+    - 172.30.0.0/16
+platform:
+  aws:
+    region: us-west-2
+publish: External
+pullSecret: "<your pull secret>"
+sshKey: "<your ssh Key>"
 ----
 
-=== Lab Access
+Download the OpenShift installer:
 
-The terminal window to your right is *already* logged into the lab environment as the `{ssh_user}` user via `ssh`.
-All steps of this lab are to be completed as the `{ssh_user}` user.
+https://console.redhat.com/openshift/downloads#tool-x86_64-openshift-install
+
+Run the installation:
+
+[source,bash]
+----
+./openshift-install create cluster --dir . --log-level=info
+----
+
+After installation, log in with the generated `kubeadmin` credentials.
+
+== 2. Post-Deployment Steps
+
+The following operators must be deployed before provisioning OpenShift AI:
+
+* Certificate Manager
+* CertManager Instance
+* ClusterIssuer + Secret
+* API + Apps certificates
+* Cert copy jobs (API + Apps)
+* Node Feature Discovery Operator + CR
+* NVIDIA GPU Operator + ClusterPolicy
+* Leader Worker Set (required for llm-d)
+* Red Hat Connectivity Link Operator (required for llm-d)
+* DNS Operator (installed with RHCL)
+* Limitador Operator (installed with RHCL)
+* Authorino Operator (installed with RHCL)
+
+=== OAuth & Access
+
+* Add Red Hat SSO as an OAuth provider
+* Add Google client secret
+* Add OAuth redirect URL to Google Client App
+* Update OAuth config
+* Add AI-BU admins as `rhods-admin`
+
+=== Enable UserWorkloadMonitoring
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true
+    alertmanagerMain:
+      enableUserAlertmanagerConfig: true
+----
+
+=== Shared Namespace
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-shared-bu
+----
+
+[NOTE]
+Storage must be *≥1 TB* for SNO.
+
+=== Notes
+
+* Service Mesh 3 and Kueue are installed automatically via the DataScienceCluster CR.
+
+== 3. OpenShift AI 3.0 Operator Installation
+
+RHOAI 3.0 is not GA yet. Use RC or nightly fragments.
+
+=== Add RHOAI 3.0 CatalogSource
+
+[source,yaml]
+----
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: rhoai-3.0-catalog
+  namespace: openshift-marketplace
+spec:
+  displayName: RHOAI 3.0 Catalog
+  image: "quay.io/rhoai/rhoai-fbc-fragment@sha256:364ea097..."
+  publisher: Red Hat
+  sourceType: grpc
+  updateStrategy:
+    registryPoll:
+      interval: 30m
+----
+
+=== ImageContentSourcePolicy
+
+[source,yaml]
+----
+apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+ name: quay-registry
+spec:
+ repositoryDigestMirrors:
+   - mirrors:
+       - quay.io/rhoai
+     source: registry.redhat.io/rhoai
+----
+
+Install RHOAI from *fast → 3.x* channel.
+
+== 4. Deploy OpenShift AI 3.0
+
+Create a DataScienceCluster:
+
+[source,yaml]
+----
+kind: DataScienceCluster
+apiVersion: datasciencecluster.opendatahub.io/v2
+metadata:
+ name: default-dsc
+spec:
+ components:
+   dashboard:
+     managementState: Managed
+   aipipelines:
+     managementState: Managed
+   feastoperator:
+     managementState: Managed
+   kserve:
+     managementState: Managed
+   llamastackoperator:
+     managementState: Managed
+   kueue:
+     managementState: Removed
+   modelregistry:
+     managementState: Managed
+     registriesNamespace: rhoai-model-registries
+   ray:
+     managementState: Managed
+   workbenches:
+     managementState: Managed
+   trainingoperator:
+     managementState: Managed
+   trustyai:
+     managementState: Managed
+----
+
+== 5. Enabling Features (Playground, AI Assets, etc.)
+
+=== Update OdhDashboardConfig
+
+[source,yaml]
+----
+apiVersion: opendatahub.io/v1alpha
+kind: OdhDashboardConfig
+metadata:
+ name: odh-dashboard-config
+ namespace: redhat-ods-applications
+spec:
+ dashboardConfig:
+   disableTracking: false
+   disableModelRegistry: false
+   disableModelCatalog: false
+   disableKServeMetrics: false
+   genAiStudio: true
+   modelAsService: true
+   disableLMEval: false
+ notebookController:
+   enabled: true
+   notebookNamespace: rhods-notebooks
+   pvcSize: 20Gi
+----
+
+=== Hardware Profile
+
+[source,yaml]
+----
+apiVersion: infrastructure.opendatahub.io/v1alpha1
+kind: HardwareProfile
+metadata:
+ name: gpu-profile
+ namespace: redhat-ods-applications
+spec:
+ identifiers:
+   - identifier: cpu
+     displayName: CPU
+     resourceType: CPU
+     minCount: 1
+     maxCount: "8"
+     defaultCount: "1"
+   - identifier: memory
+     displayName: Memory
+     resourceType: Memory
+     minCount: 1Gi
+     maxCount: 16Gi
+     defaultCount: 12Gi
+   - identifier: nvidia.com/gpu
+     displayName: GPU
+     resourceType: Accelerator
+     minCount: 1
+     maxCount: 4
+     defaultCount: 1
+----
+
+=== Deploy Model via AI Assets
+
+(Secret, ServingRuntime, InferenceService omitted here for brevity—they are included fully in your source and can be appended if needed.)
+
+Models will become available in the catalog once `Started / Running`.
+
+=== GenAI Playground Integration
+
+* Add model to Playground via *Add to Playground*
+* A LlamaStackDistribution (lsd) instance is created automatically
+* A `run.yaml` ConfigMap is generated
+* A `lsd-<model>` pod spins up
+
+=== MCP Servers
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+ name: gen-ai-aa-mcp-servers
+ namespace: redhat-ods-applications
+data:
+ GitHub-MCP-Server: |
+   {
+     "url": "https://api.githubcopilot.com/mcp",
+     "description": "GitHub MCP Server..."
+   }
+----
+
+== 6. LLMd Deployment
+
+[NOTE]
+RHCL must be installed before proceeding.
+
+If the KServe operator does not detect RHCL, reboot KServe operator pod.
+
+=== GatewayClass
+
+[source,yaml]
+----
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+ name: openshift-ai-inference
+spec:
+ controllerName: openshift.io/gateway-controller/v1
+----
+
+=== Inference Gateway
+
+[source,yaml]
+----
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+ name: openshift-ai-inference
+ namespace: openshift-ingress
+spec:
+ gatewayClassName: openshift-ai-inference
+ listeners:
+   - name: https
+     port: 443
+     protocol: HTTPS
+     hostname: inference-gateway.apps.test-rc3.rhoai.rh-aiservices-bu.com
+     tls:
+       mode: Terminate
+       certificateRefs:
+         - kind: Secret
+           name: default-gateway-tls
+     allowedRoutes:
+       namespaces:
+         from: Selector
+         selector:
+           matchExpressions:
+             - key: kubernetes.io/metadata.name
+               operator: In
+               values:
+                 - openshift-ingress
+                 - redhat-ods-applications
+                 - ai-bu-shared
+----
+
+Deploy via UI → may show *Failed* (still WIP).
+
+== 7. MaaS (Model-as-a-Service)
+
+Installation reference:
+
+https://opendatahub-io.github.io/maas-billing/install/maas-setup/
+
+== 8. Observability & Tracing
+
+Follow the documentation:
+
+https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2.25/html/managing_openshift_ai/managing-observability_managing-rhoai#collecting-metrics-from-user-workloads_managing-rhoai
+
+Prerequisites:
+
+* Install Cluster Observability Operator
